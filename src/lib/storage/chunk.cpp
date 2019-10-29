@@ -25,7 +25,7 @@ void Chunk::append(const std::vector<AllTypeVariant>& values) {
 }
 
 std::shared_ptr<BaseSegment> Chunk::get_segment(ColumnID column_id) const {
-  // TODO: error handling on index out of bounds case?
+  DebugAssert(column_id < column_count(), "Column id out of bounds");
   return _columns[column_id];
 }
 

@@ -17,7 +17,7 @@
 
 namespace opossum {
 
-Table::Table(const u_int32_t chunk_size) : _max_chunk_size(chunk_size) {
+Table::Table(const u_int32_t chunk_size) : _max_chunk_size{chunk_size} {
   // create initial chunk to make things easier
   _append_new_chunk();
 }
@@ -83,14 +83,17 @@ const std::vector<std::string>& Table::column_names() const {
 }
 
 const std::string& Table::column_name(ColumnID column_id) const {
+  DebugAssert(column_id < column_count(), "Column id out of bounds");
   return _column_names[column_id];
 }
 
 const std::string& Table::column_type(ColumnID column_id) const {
+  DebugAssert(column_id < column_count(), "Column id out of bounds");
   return _column_types[column_id];
 }
 
 Chunk& Table::get_chunk(ChunkID chunk_id) {
+  DebugAssert(chunk_id < column_count(), "Chunk id out of bounds");
   return *_chunks[chunk_id];
 }
 
