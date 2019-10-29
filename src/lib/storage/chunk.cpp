@@ -14,13 +14,14 @@
 
 namespace opossum {
 
-void Chunk::add_segment(std::shared_ptr<BaseSegment> segment) {
-  _columns.push_back(segment);
-}
+void Chunk::add_segment(std::shared_ptr<BaseSegment> segment) { _columns.push_back(segment); }
 
 void Chunk::append(const std::vector<AllTypeVariant>& values) {
-  // TODO: error handling on index out of bounds case?
-  // Implementation goes here
+  DebugAssert(values.size() == column_count(), "Row size mismatch while appending a new row.");
+  ColumnID max_bounds_index = (ColumnID)column_count();
+  for (ColumnID current_index = (ColumnID)0; current_index < max_bounds_index; ++current_index) {
+    _columns[current_index].get()->append(values[current_index]);
+  }
 }
 
 std::shared_ptr<BaseSegment> Chunk::get_segment(ColumnID column_id) const {
@@ -28,12 +29,10 @@ std::shared_ptr<BaseSegment> Chunk::get_segment(ColumnID column_id) const {
   return _columns[column_id];
 }
 
-uint16_t Chunk::column_count() const {
-  return _columns.size();
-}
+uint16_t Chunk::column_count() const { return _columns.size(); }
 
 uint32_t Chunk::size() const {
-  if(_columns.empty()) {
+  if (_columns.empty()) {
     // no columns -> empty
     return 0;
   } else {
