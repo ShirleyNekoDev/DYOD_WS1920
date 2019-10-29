@@ -23,11 +23,14 @@ Table::Table(const u_int32_t chunk_size) : _max_chunk_size(chunk_size) {
 }
 
 void Table::_append_new_chunk() {
-  // TODO
+  auto new_chunk = std::make_shared<Chunk>();
+  _chunks.push_back(new_chunk);
 }
 
 void Table::add_column(const std::string& name, const std::string& type) {
-  // Implementation goes here
+  _column_names.push_back(name);
+  _column_types.push_back(type);
+  // add value segment
 }
 
 void Table::append(std::vector<AllTypeVariant> values) {
@@ -35,8 +38,7 @@ void Table::append(std::vector<AllTypeVariant> values) {
 }
 
 uint16_t Table::column_count() const {
-  // Implementation goes here
-  return 0;
+  return _column_types.size();
 }
 
 uint64_t Table::row_count() const {
@@ -45,13 +47,15 @@ uint64_t Table::row_count() const {
 }
 
 ChunkID Table::chunk_count() const {
-  // Implementation goes here
-  return ChunkID{0};
+  return ChunkID(_chunks.size());
 }
 
 ColumnID Table::column_id_by_name(const std::string& column_name) const {
-  // Implementation goes here
-  return ColumnID{0};
+  auto search_index_iterator = std::find(_column_names.begin(), _column_names.end(), column_name);
+  if(search_index_iterator == _column_names.end()) {
+    throw std::invalid_argument("Column not found");
+  }
+  return ColumnID(std::distance(_column_names.begin(), search_index_iterator));
 }
 
 uint32_t Table::max_chunk_size() const {
@@ -59,19 +63,23 @@ uint32_t Table::max_chunk_size() const {
 }
 
 const std::vector<std::string>& Table::column_names() const {
-  throw std::runtime_error("Implement Table::column_names()");
+  return _column_names;
 }
 
 const std::string& Table::column_name(ColumnID column_id) const {
-  throw std::runtime_error("Implement Table::column_name");
+  return _column_names[column_id];
 }
 
 const std::string& Table::column_type(ColumnID column_id) const {
-  throw std::runtime_error("Implement Table::column_type");
+  return _column_types[column_id];
 }
 
-Chunk& Table::get_chunk(ChunkID chunk_id) { throw std::runtime_error("Implement Table::get_chunk"); }
+Chunk& Table::get_chunk(ChunkID chunk_id) {
+  return *_chunks[chunk_id];
+}
 
-const Chunk& Table::get_chunk(ChunkID chunk_id) const { throw std::runtime_error("Implement Table::get_chunk"); }
+const Chunk& Table::get_chunk(ChunkID chunk_id) const {
+  return get_chunk(chunk_id);
+}
 
 }  // namespace opossum

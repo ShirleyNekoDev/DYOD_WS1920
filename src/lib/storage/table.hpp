@@ -79,6 +79,13 @@ class Table : private Noncopyable {
  protected:
   u_int32_t _max_chunk_size;
 
+  std::vector<std::shared_ptr<Chunk>> _chunks;
+  
+  // these should always have the same length
+  std::vector<std::string> _column_names;
+  std::vector<std::string> _column_types;
+
   void _append_new_chunk();
+
 };
 }  // namespace opossum

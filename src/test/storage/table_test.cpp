@@ -50,24 +50,24 @@ TEST_F(StorageTableTest, GetChunk) {
 //   EXPECT_EQ(t.row_count(), 3u);
 // }
 
-// TEST_F(StorageTableTest, GetColumnName) {
-//   EXPECT_EQ(t.column_name(ColumnID{0}), "col_1");
-//   EXPECT_EQ(t.column_name(ColumnID{1}), "col_2");
-//   // TODO(anyone): Do we want checks here?
-//   // EXPECT_THROW(t.column_name(ColumnID{2}), std::exception);
-// }
+TEST_F(StorageTableTest, GetColumnName) {
+  EXPECT_EQ(t.column_name(ColumnID{0}), "col_1");
+  EXPECT_EQ(t.column_name(ColumnID{1}), "col_2");
+  // TODO(anyone): Do we want checks here?
+  // EXPECT_THROW(t.column_name(ColumnID{2}), std::exception);
+}
 
-// TEST_F(StorageTableTest, GetColumnType) {
-//   EXPECT_EQ(t.column_type(ColumnID{0}), "int");
-//   EXPECT_EQ(t.column_type(ColumnID{1}), "string");
-//   // TODO(anyone): Do we want checks here?
-//   // EXPECT_THROW(t.column_type(ColumnID{2}), std::exception);
-// }
+TEST_F(StorageTableTest, GetColumnType) {
+  EXPECT_EQ(t.column_type(ColumnID{0}), "int");
+  EXPECT_EQ(t.column_type(ColumnID{1}), "string");
+  // TODO(anyone): Do we want checks here?
+  // EXPECT_THROW(t.column_type(ColumnID{2}), std::exception);
+}
 
-// TEST_F(StorageTableTest, GetColumnIdByName) {
-//   EXPECT_EQ(t.column_id_by_name("col_2"), 1u);
-//   EXPECT_THROW(t.column_id_by_name("no_column_name"), std::exception);
-// }
+TEST_F(StorageTableTest, GetColumnIdByName) {
+  EXPECT_EQ(t.column_id_by_name("col_2"), 1u);
+  EXPECT_THROW(t.column_id_by_name("no_column_name"), std::exception);
+}
 
 TEST_F(StorageTableTest, GetChunkSize) { EXPECT_EQ(t.max_chunk_size(), 2u); }
 
