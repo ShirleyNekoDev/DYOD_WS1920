@@ -14,27 +14,31 @@
 
 namespace opossum {
 
-void Chunk::add_segment(std::shared_ptr<BaseSegment> segment) {
-  // Implementation goes here
-}
+void Chunk::add_segment(std::shared_ptr<BaseSegment> segment) { _columns.push_back(segment); }
 
 void Chunk::append(const std::vector<AllTypeVariant>& values) {
-  // Implementation goes here
+  DebugAssert(values.size() == column_count(), "Row size mismatch while appending a new row.");
+  ColumnID max_bounds_index = ColumnID{column_count()};
+  for (ColumnID current_index = ColumnID{0}; current_index < max_bounds_index; ++current_index) {
+    _columns[current_index].get()->append(values[current_index]);
+  }
 }
 
 std::shared_ptr<BaseSegment> Chunk::get_segment(ColumnID column_id) const {
-  // Implementation goes here
-  return nullptr;
+  DebugAssert(column_id < column_count(), "Column id out of bounds");
+  return _columns[column_id];
 }
 
-uint16_t Chunk::column_count() const {
-  // Implementation goes here
-  return 0;
-}
+uint16_t Chunk::column_count() const { return _columns.size(); }
 
 uint32_t Chunk::size() const {
-  // Implementation goes here
-  return 0;
+  if (_columns.empty()) {
+    // no columns -> empty
+    return 0;
+  } else {
+    // read row count from first column (each should have the same height)
+    return _columns[0].get()->size();
+  }
 }
 
 }  // namespace opossum
