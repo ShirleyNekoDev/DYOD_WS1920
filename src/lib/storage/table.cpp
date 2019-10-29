@@ -24,17 +24,32 @@ Table::Table(const u_int32_t chunk_size) : _max_chunk_size(chunk_size) {
 
 void Table::_append_new_chunk() {
   auto new_chunk = std::make_shared<Chunk>();
+  for(auto& type: _column_types) {
+    // append existing columns (as segments) to new chunk
+    new_chunk->add_segment(make_shared_by_data_type<BaseSegment, ValueSegment>(type));
+  }
   _chunks.push_back(new_chunk);
+}
+
+void Table::_append_column_to_chunks(const std::string& type) {
+  for(auto& chunk : _chunks) {
+    // append new segment to every existing chunk
+    chunk->add_segment(make_shared_by_data_type<BaseSegment, ValueSegment>(type));
+  }
 }
 
 void Table::add_column(const std::string& name, const std::string& type) {
   _column_names.push_back(name);
   _column_types.push_back(type);
-  // add value segment
+  _append_column_to_chunks(type);
 }
 
 void Table::append(std::vector<AllTypeVariant> values) {
-  // Implementation goes here
+  if(_chunks.back()->size() >= _max_chunk_size) {
+    // create a new chunk if the current one is full
+    _append_new_chunk();
+  }
+  _chunks.back()->append(values);
 }
 
 uint16_t Table::column_count() const {
@@ -42,8 +57,9 @@ uint16_t Table::column_count() const {
 }
 
 uint64_t Table::row_count() const {
-  // Implementation goes here
-  return 0;
+  auto full_chunks_row_count = (_chunks.size() - 1) * _max_chunk_size;
+  auto last_chunk_row_count = _chunks.back()->size();
+  return full_chunks_row_count + last_chunk_row_count;
 }
 
 ChunkID Table::chunk_count() const {

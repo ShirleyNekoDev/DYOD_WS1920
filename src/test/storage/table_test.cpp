@@ -40,15 +40,15 @@ TEST_F(StorageTableTest, GetChunk) {
   t.get_chunk(ChunkID{1});
 }
 
-// TEST_F(StorageTableTest, ColumnCount) { EXPECT_EQ(t.column_count(), 2u); }
+TEST_F(StorageTableTest, ColumnCount) { EXPECT_EQ(t.column_count(), 2u); }
 
-// TEST_F(StorageTableTest, RowCount) {
-//   EXPECT_EQ(t.row_count(), 0u);
-//   t.append({4, "Hello,"});
-//   t.append({6, "world"});
-//   t.append({3, "!"});
-//   EXPECT_EQ(t.row_count(), 3u);
-// }
+TEST_F(StorageTableTest, RowCount) {
+  EXPECT_EQ(t.row_count(), 0u);
+  t.append({4, "Hello,"});
+  t.append({6, "world"});
+  t.append({3, "!"});
+  EXPECT_EQ(t.row_count(), 3u);
+}
 
 TEST_F(StorageTableTest, GetColumnName) {
   EXPECT_EQ(t.column_name(ColumnID{0}), "col_1");
