@@ -15,33 +15,55 @@ StorageManager& StorageManager::get() {
 }
 
 void StorageManager::add_table(const std::string& name, std::shared_ptr<Table> table) {
-  // Implementation goes here
+  auto insertion_result = _tables.insert({name, table});
+  DebugAssert(
+    insertion_result.second,
+    "Table cound not be inserted because there was an existing table with the same name."
+  );
 }
 
 void StorageManager::drop_table(const std::string& name) {
-  // Implementation goes here
+  auto dropped_table_count = _tables.erase(name);
+  DebugAssert(
+    dropped_table_count == 1,
+    "Table could not be removed because it was not found with this name."
+  );
 }
 
 std::shared_ptr<Table> StorageManager::get_table(const std::string& name) const {
-  // Implementation goes here
-  return nullptr;
+  return _tables.at(name);
 }
 
 bool StorageManager::has_table(const std::string& name) const {
-  // Implementation goes here
-  return false;
+  return _tables.find(name) != _tables.end();
+  // return _tables.contains(name); // with C++20
 }
 
 std::vector<std::string> StorageManager::table_names() const {
-  throw std::runtime_error("Implement StorageManager::table_names");
+  std::vector<std::string> names(_tables.size());
+  for(auto& map_entry : _tables) {
+    names.push_back(map_entry.first);
+  }
+  return names;
 }
 
 void StorageManager::print(std::ostream& out) const {
-  // Implementation goes here
+  out << _tables.size() << " tables available:" << std::endl;
+  for(auto& map_entry : _tables) {
+    auto& table_name = map_entry.first;
+    auto& table = map_entry.second;
+    out << " - \""
+      << table_name << "\" ["
+      << "column_count=" << table->column_count() << ","
+      << " row_count=" << table->row_count() << ","
+      << " chunk_count=" << table->chunk_count()
+      << "]" << std::endl;
+  }
 }
 
 void StorageManager::reset() {
-  // Implementation goes here;
+  // clear content of storage manager (all registered tables)
+  _tables.clear();
 }
 
 }  // namespace opossum
