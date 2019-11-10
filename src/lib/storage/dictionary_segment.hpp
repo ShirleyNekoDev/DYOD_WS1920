@@ -38,7 +38,6 @@ class DictionarySegment : public BaseSegment {
     Assert(num_elements > 0, "segment has no elements");
 
     std::vector<uint32_t> indices(num_elements);
-    std::vector<uint32_t> attributes(num_elements);
     std::vector<bool> same_as_before(num_elements);
 
     std::iota(indices.begin(), indices.end(), 0);
@@ -58,20 +57,13 @@ class DictionarySegment : public BaseSegment {
       previous = uncompressed_index;
     }
 
-    _dictionary = std::make_shared<std::vector<T>>(num_unique);
-    uint32_t compressed_index = static_cast<uint32_t>(-1);
-    for (uint32_t position = 0; position < num_elements; position++) {
-      uint32_t uncompressed_index = indices[position];
-      if (!same_as_before[position]) {
-        compressed_index++;
-        (*_dictionary)[compressed_index] = values[uncompressed_index];
-      }
-      attributes[uncompressed_index] = compressed_index;
+    if (num_unique <= std::numeric_limits<uint8_t>::max()) {
+      build_dictionary_and_attributes<uint8_t>(values, indices, same_as_before, num_unique);
+    } else if (num_unique <= std::numeric_limits<uint16_t>::max()) {
+      build_dictionary_and_attributes<uint16_t>(values, indices, same_as_before, num_unique);
+    } else {
+      build_dictionary_and_attributes<uint32_t>(values, indices, same_as_before, num_unique);
     }
-
-    _dictionary->resize(compressed_index + 1);
-    _attribute_vector = std::static_pointer_cast<BaseAttributeVector>(
-          std::make_shared<FixedSizeAttributeVector<uint32_t>>(std::move(attributes)));
   }
 
   // return the value at a certain position. If you want to write efficient operators, back off!
@@ -154,6 +146,29 @@ class DictionarySegment : public BaseSegment {
  protected:
   std::shared_ptr<std::vector<T>> _dictionary;
   std::shared_ptr<BaseAttributeVector> _attribute_vector;
+
+  template<typename IndexType> void build_dictionary_and_attributes(const std::vector<T> &values,
+                                                                    const std::vector<uint32_t> &indices,
+                                                                    const std::vector<bool> &same_as_before,
+                                                                    const uint32_t num_unique) {
+    uint32_t num_elements = values.size();
+    std::vector<IndexType> attributes(num_elements);
+    _dictionary = std::make_shared<std::vector<T>>(num_unique);
+
+    uint32_t compressed_index = static_cast<uint32_t>(-1);
+    for (uint32_t position = 0; position < num_elements; position++) {
+      uint32_t uncompressed_index = indices[position];
+      if (!same_as_before[position]) {
+        compressed_index++;
+        (*_dictionary)[compressed_index] = values[uncompressed_index];
+      }
+      attributes[uncompressed_index] = compressed_index;
+    }
+
+    _dictionary->resize(compressed_index + 1);
+    _attribute_vector = std::static_pointer_cast<BaseAttributeVector>(
+          std::make_shared<FixedSizeAttributeVector<IndexType>>(std::move(attributes)));
+  }
 };
 
 }  // namespace opossum
