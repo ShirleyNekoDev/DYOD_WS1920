@@ -35,29 +35,38 @@ class DictionarySegment : public BaseSegment {
 
     const auto &values = value_segment->values();
     uint32_t num_elements = values.size();
+    Assert(num_elements > 0, "segment has no elements");
 
     std::vector<uint32_t> indices(num_elements);
     std::vector<uint32_t> attributes(num_elements);
-    _dictionary = std::make_shared<std::vector<T>>(num_elements);
+    std::vector<bool> same_as_before(num_elements);
 
     std::iota(indices.begin(), indices.end(), 0);
     std::sort(indices.begin(), indices.end(), [values](uint32_t index_1, uint32_t index_2) {
       return values[index_1] < values[index_2];
     });
 
-    uint32_t compressed_index = 0;
     uint32_t previous = indices[0];
-    (*_dictionary)[0] = values[previous];
-
+    uint32_t num_unique = 1;
     for (uint32_t position = 1; position < num_elements; position++) {
       uint32_t uncompressed_index = indices[position];
-      if (values[previous] != values[uncompressed_index]) {
+      if (values[previous] == values[uncompressed_index]) {
+        same_as_before[position] = true;
+      } else {
+        num_unique++;
+      }
+      previous = uncompressed_index;
+    }
+
+    _dictionary = std::make_shared<std::vector<T>>(num_unique);
+    uint32_t compressed_index = static_cast<uint32_t>(-1);
+    for (uint32_t position = 0; position < num_elements; position++) {
+      uint32_t uncompressed_index = indices[position];
+      if (!same_as_before[position]) {
         compressed_index++;
         (*_dictionary)[compressed_index] = values[uncompressed_index];
       }
-
       attributes[uncompressed_index] = compressed_index;
-      previous = uncompressed_index;
     }
 
     _dictionary->resize(compressed_index + 1);
