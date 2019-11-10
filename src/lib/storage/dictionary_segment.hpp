@@ -5,14 +5,18 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <numeric>
 
 #include "all_type_variant.hpp"
 #include "types.hpp"
+#include "storage/fixed_size_attribute_vector.hpp"
+#include "storage/base_segment.hpp"
+#include "storage/value_segment.hpp"
+#include "utils/assert.hpp"
 
 namespace opossum {
 
 class BaseAttributeVector;
-class BaseSegment;
 
 // Even though ValueIDs do not have to use the full width of ValueID (uint32_t), this will also work for smaller ValueID
 // types (uint8_t, uint16_t) since after a down-cast INVALID_VALUE_ID will look like their numeric_limit::max()
@@ -25,51 +29,118 @@ class DictionarySegment : public BaseSegment {
   /**
    * Creates a Dictionary segment from a given value segment.
    */
-  explicit DictionarySegment(const std::shared_ptr<BaseSegment>& base_segment);
+  explicit DictionarySegment(const std::shared_ptr<BaseSegment>& base_segment) {
+    auto value_segment = std::dynamic_pointer_cast<ValueSegment<T>>(base_segment);
+    Assert(value_segment, "input should be a ValueSegment of same data type");
 
-  // SEMINAR INFORMATION: Since most of these methods depend on the template parameter, you will have to implement
-  // the DictionarySegment in this file. Replace the method signatures with actual implementations.
+    const auto &values = value_segment->values();
+    uint32_t num_elements = values.size();
+
+    std::vector<uint32_t> indices(num_elements);
+    std::vector<uint32_t> attributes(num_elements);
+    _dictionary = std::make_shared<std::vector<T>>(num_elements);
+
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(), [values](uint32_t index_1, uint32_t index_2) {
+      return values[index_1] < values[index_2];
+    });
+
+    uint32_t compressed_index = 0;
+    uint32_t previous = indices[0];
+    (*_dictionary)[0] = values[previous];
+
+    for (uint32_t position = 1; position < num_elements; position++) {
+      uint32_t uncompressed_index = indices[position];
+      if (values[previous] != values[uncompressed_index]) {
+        compressed_index++;
+        (*_dictionary)[compressed_index] = values[uncompressed_index];
+      }
+
+      attributes[uncompressed_index] = compressed_index;
+      previous = uncompressed_index;
+    }
+
+    _dictionary->resize(compressed_index + 1);
+    _attribute_vector = std::static_pointer_cast<BaseAttributeVector>(
+          std::make_shared<FixedSizeAttributeVector<uint32_t>>(std::move(attributes)));
+  }
 
   // return the value at a certain position. If you want to write efficient operators, back off!
-  AllTypeVariant operator[](const ChunkOffset chunk_offset) const override;
+  AllTypeVariant operator[](const ChunkOffset chunk_offset) const override {
+    return _dictionary->at(_attribute_vector->get(chunk_offset));
+  }
 
   // return the value at a certain position.
-  T get(const size_t chunk_offset) const;
+  T get(const size_t chunk_offset) const {
+    return _dictionary->at(_attribute_vector->get(chunk_offset));
+  }
 
   // dictionary segments are immutable
-  void append(const AllTypeVariant&) override;
+  void append(const AllTypeVariant&) override {
+    throw std::logic_error("dictionary segments are immutable");
+  }
 
   // returns an underlying dictionary
-  std::shared_ptr<const std::vector<T>> dictionary() const;
+  std::shared_ptr<const std::vector<T>> dictionary() const {
+    return _dictionary;
+  }
 
   // returns an underlying data structure
-  std::shared_ptr<const BaseAttributeVector> attribute_vector() const;
+  std::shared_ptr<const BaseAttributeVector> attribute_vector() const {
+    return _attribute_vector;
+  }
 
   // return the value represented by a given ValueID
-  const T& value_by_value_id(ValueID value_id) const;
+  const T& value_by_value_id(ValueID value_id) const {
+    return _dictionary.at(value_id);
+  }
 
   // returns the first value ID that refers to a value >= the search value
   // returns INVALID_VALUE_ID if all values are smaller than the search value
-  ValueID lower_bound(T value) const;
+  ValueID lower_bound(T value) const {
+    const auto iterator = std::lower_bound(_dictionary->begin(), _dictionary->end(), value);
+    if (iterator == _dictionary->end()) {
+      return INVALID_VALUE_ID;
+    } else {
+      return ValueID(iterator - _dictionary->begin());
+    }
+  }
 
   // same as lower_bound(T), but accepts an AllTypeVariant
-  ValueID lower_bound(const AllTypeVariant& value) const;
+  ValueID lower_bound(const AllTypeVariant& value) const {
+    return lower_bound(boost::get<T>(value));
+  }
 
   // returns the first value ID that refers to a value > the search value
   // returns INVALID_VALUE_ID if all values are smaller than or equal to the search value
-  ValueID upper_bound(T value) const;
+  ValueID upper_bound(T value) const {
+    const auto iterator = std::upper_bound(_dictionary->begin(), _dictionary->end(), value);
+    if (iterator == _dictionary->end()) {
+      return INVALID_VALUE_ID;
+    } else {
+      return ValueID(iterator - _dictionary->begin());
+    }
+  }
 
   // same as upper_bound(T), but accepts an AllTypeVariant
-  ValueID upper_bound(const AllTypeVariant& value) const;
+  ValueID upper_bound(const AllTypeVariant& value) const {
+    return upper_bound(boost::get<T>(value));
+  }
 
   // return the number of unique_values (dictionary entries)
-  size_t unique_values_count() const;
+  size_t unique_values_count() const {
+    return _dictionary->size();
+  }
 
   // return the number of entries
-  size_t size() const override;
+  size_t size() const override {
+    return _attribute_vector->size();
+  }
 
   // returns the calculated memory usage
-  size_t estimate_memory_usage() const final;
+  size_t estimate_memory_usage() const final {
+    return sizeof(_dictionary->capacity() * sizeof(T) + _attribute_vector->estimate_memory_usage());
+  }
 
  protected:
   std::shared_ptr<std::vector<T>> _dictionary;
