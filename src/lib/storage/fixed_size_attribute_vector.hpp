@@ -9,8 +9,7 @@ namespace opossum {
 template <typename T>
 class FixedSizeAttributeVector : public BaseAttributeVector {
  public:
-  explicit FixedSizeAttributeVector(std::vector<T> value_ids):
-    _value_ids{value_ids} {}
+  explicit FixedSizeAttributeVector(std::vector<T> value_ids) : _value_ids{value_ids} {}
 
   // returns the value id at a given position
   virtual ValueID get(const size_t index) const {
@@ -25,19 +24,13 @@ class FixedSizeAttributeVector : public BaseAttributeVector {
   }
 
   // returns the number of values
-  virtual size_t size() const {
-    return _value_ids.size();
-  }
+  virtual size_t size() const { return _value_ids.size(); }
 
   // returns the width of biggest value id in bytes
-  virtual AttributeVectorWidth width() const {
-    return sizeof(T);
-  }
+  virtual AttributeVectorWidth width() const { return sizeof(T); }
 
   // returns the calculated memory usage
-  virtual size_t estimate_memory_usage() const {
-    return _value_ids.capacity() * sizeof(T);
-  }
+  virtual size_t estimate_memory_usage() const { return _value_ids.capacity() * sizeof(T); }
 
  protected:
   std::vector<T> _value_ids;

@@ -2,17 +2,17 @@
 
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
-#include <numeric>
 
 #include "all_type_variant.hpp"
+#include "storage/base_segment.hpp"
+#include "storage/fixed_size_attribute_vector.hpp"
+#include "storage/value_segment.hpp"
 #include "type_cast.hpp"
 #include "types.hpp"
-#include "storage/fixed_size_attribute_vector.hpp"
-#include "storage/base_segment.hpp"
-#include "storage/value_segment.hpp"
 #include "utils/assert.hpp"
 
 namespace opossum {
@@ -34,41 +34,29 @@ class DictionarySegment : public BaseSegment {
     auto value_segment = std::dynamic_pointer_cast<ValueSegment<T>>(base_segment);
     Assert(value_segment, "Input should be a ValueSegment of same data type");
 
-    const auto &column_values = value_segment->values();
+    const auto& column_values = value_segment->values();
     Assert(column_values.size() > 0, "Segment has no elements");
 
     _compress_values(column_values);
   }
 
   // return the value at a certain position. If you want to write efficient operators, back off!
-  AllTypeVariant operator[](const ChunkOffset chunk_offset) const override {
-    return get(chunk_offset);
-  }
+  AllTypeVariant operator[](const ChunkOffset chunk_offset) const override { return get(chunk_offset); }
 
   // return the value at a certain position.
-  T get(const size_t chunk_offset) const {
-    return _dictionary->at(_attribute_vector->get(chunk_offset));
-  }
+  T get(const size_t chunk_offset) const { return _dictionary->at(_attribute_vector->get(chunk_offset)); }
 
   // dictionary segments are immutable
-  void append(const AllTypeVariant&) override {
-    throw std::logic_error("dictionary segments are immutable");
-  }
+  void append(const AllTypeVariant&) override { throw std::logic_error("dictionary segments are immutable"); }
 
   // returns an underlying dictionary
-  std::shared_ptr<const std::vector<T>> dictionary() const {
-    return _dictionary;
-  }
+  std::shared_ptr<const std::vector<T>> dictionary() const { return _dictionary; }
 
   // returns an underlying data structure
-  std::shared_ptr<const BaseAttributeVector> attribute_vector() const {
-    return _attribute_vector;
-  }
+  std::shared_ptr<const BaseAttributeVector> attribute_vector() const { return _attribute_vector; }
 
   // return the value represented by a given ValueID
-  const T& value_by_value_id(ValueID value_id) const {
-    return _dictionary.at(value_id);
-  }
+  const T& value_by_value_id(ValueID value_id) const { return _dictionary.at(value_id); }
 
   // returns the first value ID that refers to a value >= the search value
   // returns INVALID_VALUE_ID if all values are smaller than the search value
@@ -82,9 +70,7 @@ class DictionarySegment : public BaseSegment {
   }
 
   // same as lower_bound(T), but accepts an AllTypeVariant
-  ValueID lower_bound(const AllTypeVariant& value) const {
-    return lower_bound(type_cast<T>(value));
-  }
+  ValueID lower_bound(const AllTypeVariant& value) const { return lower_bound(type_cast<T>(value)); }
 
   // returns the first value ID that refers to a value > the search value
   // returns INVALID_VALUE_ID if all values are smaller than or equal to the search value
@@ -98,19 +84,13 @@ class DictionarySegment : public BaseSegment {
   }
 
   // same as upper_bound(T), but accepts an AllTypeVariant
-  ValueID upper_bound(const AllTypeVariant& value) const {
-    return upper_bound(type_cast<T>(value));
-  }
+  ValueID upper_bound(const AllTypeVariant& value) const { return upper_bound(type_cast<T>(value)); }
 
   // return the number of unique_values (dictionary entries)
-  size_t unique_values_count() const {
-    return _dictionary->size();
-  }
+  size_t unique_values_count() const { return _dictionary->size(); }
 
   // return the number of entries
-  size_t size() const override {
-    return _attribute_vector->size();
-  }
+  size_t size() const override { return _attribute_vector->size(); }
 
   // returns the calculated memory usage
   size_t estimate_memory_usage() const final {
@@ -122,19 +102,16 @@ class DictionarySegment : public BaseSegment {
   std::shared_ptr<std::vector<T>> _dictionary;
   std::shared_ptr<BaseAttributeVector> _attribute_vector;
 
-  void _compress_values(
-    const std::vector<T> &column_values
-  ) {
+  void _compress_values(const std::vector<T>& column_values) {
     std::vector<uint32_t> lookup_indices(column_values.size());
     // initialized with many falses
     std::vector<bool> same_as_previous_element(column_values.size());
 
     std::iota(lookup_indices.begin(), lookup_indices.end(), 0);
-    std::sort(
-      lookup_indices.begin(), lookup_indices.end(),
-      [&column_values](const uint32_t index_1, const uint32_t index_2) {
-        return column_values[index_1] < column_values[index_2];
-      });
+    std::sort(lookup_indices.begin(), lookup_indices.end(),
+              [&column_values](const uint32_t index_1, const uint32_t index_2) {
+                return column_values[index_1] < column_values[index_2];
+              });
 
     uint32_t previous_uncompressed_index = lookup_indices[0];
     uint32_t num_unique = 1;
@@ -157,12 +134,9 @@ class DictionarySegment : public BaseSegment {
     }
   }
 
-  template<typename IndexType> void _build_dictionary_and_attributes(
-    const std::vector<T> &values,
-    const std::vector<uint32_t> &indices,
-    const std::vector<bool> &same_as_before,
-    const uint32_t num_unique
-  ) {
+  template <typename IndexType>
+  void _build_dictionary_and_attributes(const std::vector<T>& values, const std::vector<uint32_t>& indices,
+                                        const std::vector<bool>& same_as_before, const uint32_t num_unique) {
     std::vector<IndexType> attributes(values.size());
     _dictionary = std::make_shared<std::vector<T>>();
     _dictionary->reserve(num_unique);
@@ -176,7 +150,7 @@ class DictionarySegment : public BaseSegment {
     }
 
     _attribute_vector = std::static_pointer_cast<BaseAttributeVector>(
-          std::make_shared<FixedSizeAttributeVector<IndexType>>(std::move(attributes)));
+        std::make_shared<FixedSizeAttributeVector<IndexType>>(std::move(attributes)));
   }
 };
 

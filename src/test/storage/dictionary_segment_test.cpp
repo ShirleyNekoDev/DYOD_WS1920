@@ -41,7 +41,6 @@ TEST_F(StorageDictionarySegmentTest, CompressSegmentString) {
   EXPECT_EQ(dict_col->attribute_vector()->width(), 1);
 }
 
-
 TEST_F(StorageDictionarySegmentTest, CompressSegmentMedium) {
   for (int i = 0; i < 256; i++) {
     vc_int->append(i);
@@ -69,7 +68,6 @@ TEST_F(StorageDictionarySegmentTest, CompressSegmentMedium) {
   EXPECT_EQ(dict_col2->attribute_vector()->width(), 2);
 }
 
-
 TEST_F(StorageDictionarySegmentTest, CompressSegmentLarge) {
   for (int i = 0; i < 65536; i++) {
     vc_int->append(i);
@@ -96,8 +94,6 @@ TEST_F(StorageDictionarySegmentTest, CompressSegmentLarge) {
   EXPECT_EQ(dict_col->attribute_vector()->width(), 2);
   EXPECT_EQ(dict_col2->attribute_vector()->width(), 4);
 }
-
-
 
 TEST_F(StorageDictionarySegmentTest, LowerUpperBound) {
   for (int i = 0; i <= 10; i += 2) vc_int->append(i);

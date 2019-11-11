@@ -6,12 +6,12 @@
 #include <memory>
 #include <numeric>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
-#include <thread>
 
-#include "value_segment.hpp"
 #include "dictionary_segment.hpp"
+#include "value_segment.hpp"
 
 #include "resolve_type.hpp"
 #include "types.hpp"
@@ -58,11 +58,9 @@ void Table::append(std::vector<AllTypeVariant> values) {
 uint16_t Table::column_count() const { return _column_types.size(); }
 
 uint64_t Table::row_count() const {
-  return std::accumulate(
-    _chunks.begin(), _chunks.end(), 0,
-    [](uint64_t sum, std::shared_ptr<Chunk> current_chunk) {
-      return sum + current_chunk->size();
-    });
+  return std::accumulate(_chunks.begin(), _chunks.end(), 0, [](uint64_t sum, std::shared_ptr<Chunk> current_chunk) {
+    return sum + current_chunk->size();
+  });
 }
 
 ChunkID Table::chunk_count() const { return ChunkID(_chunks.size()); }
@@ -111,13 +109,10 @@ void Table::compress_chunk(ChunkID chunk_id) {
 
     std::shared_ptr<BaseSegment> compressed_segment;
 
-    threads.push_back(std::thread(
-      [&compressed_segment, &base_segment, &segment_type](){
-        // build dictionary compressed segment
-        compressed_segment = make_shared_by_data_type<BaseSegment, DictionarySegment>(
-          segment_type,
-          base_segment);
-      }));
+    threads.push_back(std::thread([&compressed_segment, &base_segment, &segment_type]() {
+      // build dictionary compressed segment
+      compressed_segment = make_shared_by_data_type<BaseSegment, DictionarySegment>(segment_type, base_segment);
+    }));
 
     // add segment to chunk
     new_chunk->add_segment(compressed_segment);
