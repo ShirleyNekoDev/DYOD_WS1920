@@ -98,15 +98,27 @@ const Chunk& Table::get_chunk(ChunkID chunk_id) const { return get_chunk(chunk_i
 
 void Table::compress_chunk(ChunkID chunk_id) {
   const auto& old_chunk = get_chunk(chunk_id);
-  auto new_chunk = std::make_shared<Chunk>();
 
-  for (ColumnID column_id(0); column_id < old_chunk.size(); column_id++) {
+  // new empty chunk
+  auto new_chunk = std::make_unique<Chunk>();
+
+  for (ColumnID column_id(0); column_id < old_chunk.size(); ++column_id) {
     const auto base_segment = old_chunk.get_segment(column_id);
-    auto dictionary_segment =
-        make_shared_by_data_type<BaseSegment, DictionarySegment>(_column_types[column_id], base_segment);
 
+    // TODO: add parallelism via std::thread
+
+    // build dictionary compressed segment
+    auto dictionary_segment = make_shared_by_data_type<BaseSegment, DictionarySegment>(
+      _column_types[column_id],
+      base_segment
+    );
+
+    // add segment to chunk
     new_chunk->add_segment(dictionary_segment);
   }
+
+ // atomic chunk exchange
+  _chunks[chunk_id].reset(new_chunk.get());
 }
 
 }  // namespace opossum

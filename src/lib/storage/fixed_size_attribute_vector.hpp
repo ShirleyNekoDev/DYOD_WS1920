@@ -12,8 +12,9 @@ class FixedSizeAttributeVector : public BaseAttributeVector {
     _value_ids{value_ids} {}
 
   // returns the value id at a given position
-  virtual ValueID get(const size_t i) const {
-    return ValueID(_value_ids.at(i));
+  virtual ValueID get(const size_t index) const {
+    DebugAssert(index > size(), "Index out of bounds");
+    return ValueID(_value_ids[index]);
   }
 
   // sets the value id at a given position
