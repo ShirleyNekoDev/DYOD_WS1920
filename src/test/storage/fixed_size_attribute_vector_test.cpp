@@ -16,6 +16,7 @@ TEST_F(FixedSizeAttibuteVectorTest, SimpleMesthodsTest) {
     EXPECT_EQ(attributes.get(3), 34);
     attributes.set(3, opossum::ValueID(43));
     EXPECT_EQ(attributes.get(3), 43);
+    EXPECT_NEAR(attributes.estimate_memory_usage(), 5*sizeof(uint16_t), 3);
 }
 
 
