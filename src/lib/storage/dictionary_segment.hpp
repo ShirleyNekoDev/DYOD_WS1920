@@ -57,9 +57,9 @@ class DictionarySegment : public BaseSegment {
       previous = uncompressed_index;
     }
 
-    if (num_unique <= std::numeric_limits<uint8_t>::max()) {
+    if (num_unique <= static_cast<uint32_t>(std::numeric_limits<uint8_t>::max()) + 1) {
       build_dictionary_and_attributes<uint8_t>(values, indices, same_as_before, num_unique);
-    } else if (num_unique <= std::numeric_limits<uint16_t>::max()) {
+    } else if (num_unique <= static_cast<uint32_t>(std::numeric_limits<uint16_t>::max()) + 1) {
       build_dictionary_and_attributes<uint16_t>(values, indices, same_as_before, num_unique);
     } else {
       build_dictionary_and_attributes<uint32_t>(values, indices, same_as_before, num_unique);
