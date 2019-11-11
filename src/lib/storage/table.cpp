@@ -32,6 +32,7 @@ void Table::_append_new_chunk() {
 }
 
 void Table::_append_column_to_chunks(const std::string& type) {
+  DebugAssert(row_count() == 0, "Cannot append new columns to already existing chunks");
   for (auto& chunk : _chunks) {
     // append new segment to every existing chunk
     chunk->add_segment(make_shared_by_data_type<BaseSegment, ValueSegment>(type));
@@ -55,9 +56,12 @@ void Table::append(std::vector<AllTypeVariant> values) {
 uint16_t Table::column_count() const { return _column_types.size(); }
 
 uint64_t Table::row_count() const {
-  auto full_chunks_row_count = (_chunks.size() - 1) * _max_chunk_size;
-  auto last_chunk_row_count = _chunks.back()->size();
-  return full_chunks_row_count + last_chunk_row_count;
+  return std::accumulate(
+    _chunks.begin(), _chunks.end(), 0,
+    [](uint64_t sum, std::shared_ptr<Chunk> current_chunk) {
+      return sum + current_chunk->size();
+    }
+  );
 }
 
 ChunkID Table::chunk_count() const { return ChunkID(_chunks.size()); }

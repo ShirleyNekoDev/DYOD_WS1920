@@ -80,7 +80,7 @@ class Table : private Noncopyable {
   void compress_chunk(ChunkID chunk_id);
 
  protected:
-  u_int32_t _max_chunk_size;
+  uint32_t _max_chunk_size;
 
   std::vector<std::shared_ptr<Chunk>> _chunks;
 
