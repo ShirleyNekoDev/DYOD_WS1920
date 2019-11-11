@@ -43,21 +43,30 @@
 
 
  TEST_F(StorageDictionarySegmentTest, CompressSegmentMedium) {
-   for (int i = 0; i < 280; i++) {
+   for (int i = 0; i < 256; i++) {
      vc_int->append(i);
    }
-   vc_int->append(42);
 
    auto col = opossum::make_shared_by_data_type<opossum::BaseSegment, opossum::DictionarySegment>("int", vc_int);
    auto dict_col = std::dynamic_pointer_cast<opossum::DictionarySegment<int>>(col);
 
-   EXPECT_EQ(dict_col->unique_values_count(), 280u);
-   EXPECT_EQ(dict_col->size(), 281u);
+   vc_int->append(42);
+   vc_int->append(70000);
+   auto col2 = opossum::make_shared_by_data_type<opossum::BaseSegment, opossum::DictionarySegment>("int", vc_int);
+   auto dict_col2 = std::dynamic_pointer_cast<opossum::DictionarySegment<int>>(col2);
 
-   for (int i = 0; i < 280; i++) {
+   EXPECT_EQ(dict_col->unique_values_count(), 256u);
+   EXPECT_EQ(dict_col2->unique_values_count(), 257u);
+   EXPECT_EQ(dict_col->size(), 256u);
+   EXPECT_EQ(dict_col2->size(), 258u);
+
+   for (int i = 0; i < 256; i++) {
      EXPECT_EQ(dict_col->dictionary()->at(i), i);
+     EXPECT_EQ(dict_col2->dictionary()->at(i), i);
    }
 
+   EXPECT_EQ(dict_col->attribute_vector()->width(), 1);
+   EXPECT_EQ(dict_col2->attribute_vector()->width(), 2);
  }
 
 
@@ -65,25 +74,27 @@
    for (int i = 0; i < 65536; i++) {
      vc_int->append(i);
    }
-   vc_int->append(42);
 
    auto col = opossum::make_shared_by_data_type<opossum::BaseSegment, opossum::DictionarySegment>("int", vc_int);
    auto dict_col = std::dynamic_pointer_cast<opossum::DictionarySegment<int>>(col);
+
+   vc_int->append(42);
+   vc_int->append(70000);
    auto col2 = opossum::make_shared_by_data_type<opossum::BaseSegment, opossum::DictionarySegment>("int", vc_int);
-   auto dict_col2 = std::dynamic_pointer_cast<opossum::DictionarySegment<int>>(col);
+   auto dict_col2 = std::dynamic_pointer_cast<opossum::DictionarySegment<int>>(col2);
 
    EXPECT_EQ(dict_col->unique_values_count(), 65536u);
-   EXPECT_EQ(dict_col2->unique_values_count(), 65536u);
+   EXPECT_EQ(dict_col2->unique_values_count(), 65537u);
    EXPECT_EQ(dict_col->size(), 65536u);
-   EXPECT_EQ(dict_col2->size(), 65537u);
+   EXPECT_EQ(dict_col2->size(), 65538u);
 
    for (int i = 0; i < 65536; i++) {
      EXPECT_EQ(dict_col->dictionary()->at(i), i);
      EXPECT_EQ(dict_col2->dictionary()->at(i), i);
    }
 
-   EXPECT_EQ(dict_col->attribute_vector()->width(), 1);
-   EXPECT_EQ(dict_col2->attribute_vector()->width(), 2);
+   EXPECT_EQ(dict_col->attribute_vector()->width(), 2);
+   EXPECT_EQ(dict_col2->attribute_vector()->width(), 4);
 
  }
 
