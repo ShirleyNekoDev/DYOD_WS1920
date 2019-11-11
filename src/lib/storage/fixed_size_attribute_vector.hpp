@@ -13,7 +13,7 @@ class FixedSizeAttributeVector : public BaseAttributeVector {
 
   // returns the value id at a given position
   virtual ValueID get(const size_t index) const {
-    DebugAssert(index > size(), "Index out of bounds");
+    DebugAssert(index < size(), "Index out of bounds");
     return ValueID(_value_ids[index]);
   }
 
