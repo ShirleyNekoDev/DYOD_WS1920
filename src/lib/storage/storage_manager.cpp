@@ -33,7 +33,8 @@ bool StorageManager::has_table(const std::string& name) const {
 }
 
 std::vector<std::string> StorageManager::table_names() const {
-  std::vector<std::string> names(_tables.size());
+  std::vector<std::string> names;
+  names.reserve(_tables.size());
   for (auto& map_entry : _tables) {
     names.push_back(map_entry.first);
   }

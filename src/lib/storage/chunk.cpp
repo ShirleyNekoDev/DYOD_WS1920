@@ -20,7 +20,7 @@ void Chunk::append(const std::vector<AllTypeVariant>& values) {
   DebugAssert(values.size() == column_count(), "Row size mismatch while appending a new row.");
   ColumnID max_bounds_index = ColumnID{column_count()};
   for (ColumnID current_index = ColumnID{0}; current_index < max_bounds_index; ++current_index) {
-    _columns[current_index].get()->append(values[current_index]);
+    _columns[current_index]->append(values[current_index]);
   }
 }
 
