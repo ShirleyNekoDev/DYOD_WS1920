@@ -62,7 +62,7 @@
 
 
  TEST_F(StorageDictionarySegmentTest, CompressSegmentLarge) {
-   for (int i = 0; i < 256; i++) {
+   for (int i = 0; i < 65536; i++) {
      vc_int->append(i);
    }
    vc_int->append(42);
@@ -72,12 +72,12 @@
    auto col2 = opossum::make_shared_by_data_type<opossum::BaseSegment, opossum::DictionarySegment>("int", vc_int);
    auto dict_col2 = std::dynamic_pointer_cast<opossum::DictionarySegment<int>>(col);
 
-   EXPECT_EQ(dict_col->unique_values_count(), 256u);
-   EXPECT_EQ(dict_col2->unique_values_count(), 256u);
-   EXPECT_EQ(dict_col->size(), 256u);
-   EXPECT_EQ(dict_col2->size(), 257u);
+   EXPECT_EQ(dict_col->unique_values_count(), 65536u);
+   EXPECT_EQ(dict_col2->unique_values_count(), 65536u);
+   EXPECT_EQ(dict_col->size(), 65536u);
+   EXPECT_EQ(dict_col2->size(), 65537u);
 
-   for (int i = 0; i < 256; i++) {
+   for (int i = 0; i < 65536; i++) {
      EXPECT_EQ(dict_col->dictionary()->at(i), i);
      EXPECT_EQ(dict_col2->dictionary()->at(i), i);
    }
