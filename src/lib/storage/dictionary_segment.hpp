@@ -41,7 +41,7 @@ class DictionarySegment : public BaseSegment {
     std::vector<bool> same_as_before(num_elements);
 
     std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(), indices.end(), [values](uint32_t index_1, uint32_t index_2) {
+    std::sort(indices.begin(), indices.end(), [&values](const uint32_t index_1, const uint32_t index_2) {
       return values[index_1] < values[index_2];
     });
 
