@@ -10,7 +10,7 @@ class FixedSizeAttibuteVectorTest : public ::testing::Test {
 };
 
 TEST_F(FixedSizeAttibuteVectorTest, SimpleMesthodsTest) {
-    opossum::FixedSizeAttributeVector<uint16_t> attributes({3, 4, 34, 5, 1});
+    opossum::FixedSizeAttributeVector<uint16_t> attributes({3, 4, 5, 34, 1});
 
     EXPECT_EQ(attributes.size(), 5);
     EXPECT_EQ(attributes.get(3), 34);
