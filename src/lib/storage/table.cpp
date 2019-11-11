@@ -6,9 +6,11 @@
 #include <memory>
 #include <numeric>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
+#include "dictionary_segment.hpp"
 #include "value_segment.hpp"
 
 #include "resolve_type.hpp"
@@ -56,12 +58,9 @@ void Table::append(std::vector<AllTypeVariant> values) {
 uint16_t Table::column_count() const { return _column_types.size(); }
 
 uint64_t Table::row_count() const {
-  return std::accumulate(
-    _chunks.begin(), _chunks.end(), 0,
-    [](uint64_t sum, std::shared_ptr<Chunk> current_chunk) {
-      return sum + current_chunk->size();
-    }
-  );
+  return std::accumulate(_chunks.begin(), _chunks.end(), 0, [](uint64_t sum, std::shared_ptr<Chunk> current_chunk) {
+    return sum + current_chunk->size();
+  });
 }
 
 ChunkID Table::chunk_count() const { return ChunkID(_chunks.size()); }
@@ -95,6 +94,36 @@ Chunk& Table::get_chunk(ChunkID chunk_id) {
 
 const Chunk& Table::get_chunk(ChunkID chunk_id) const { return get_chunk(chunk_id); }
 
-void Table::compress_chunk(ChunkID chunk_id) { throw std::runtime_error("Implement Table::compress_chunk"); }
+void Table::compress_chunk(ChunkID chunk_id) {
+  const auto& old_chunk = get_chunk(chunk_id);
+
+  // new empty chunk
+  auto new_chunk = std::make_unique<Chunk>();
+
+  std::vector<std::thread> threads;
+  threads.reserve(old_chunk.size());
+
+  for (ColumnID column_id(0); column_id < old_chunk.size(); ++column_id) {
+    const auto base_segment = old_chunk.get_segment(column_id);
+    const auto segment_type = _column_types[column_id];
+
+    std::shared_ptr<BaseSegment> compressed_segment;
+
+    threads.push_back(std::thread([&compressed_segment, &base_segment, &segment_type]() {
+      // build dictionary compressed segment
+      compressed_segment = make_shared_by_data_type<BaseSegment, DictionarySegment>(segment_type, base_segment);
+    }));
+
+    // add segment to chunk
+    new_chunk->add_segment(compressed_segment);
+  }
+
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
+  // atomic chunk exchange
+  _chunks[chunk_id].reset(new_chunk.get());
+}
 
 }  // namespace opossum
