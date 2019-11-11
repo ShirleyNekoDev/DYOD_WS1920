@@ -62,8 +62,7 @@ uint64_t Table::row_count() const {
     _chunks.begin(), _chunks.end(), 0,
     [](uint64_t sum, std::shared_ptr<Chunk> current_chunk) {
       return sum + current_chunk->size();
-    }
-  );
+    });
 }
 
 ChunkID Table::chunk_count() const { return ChunkID(_chunks.size()); }
@@ -117,16 +116,14 @@ void Table::compress_chunk(ChunkID chunk_id) {
         // build dictionary compressed segment
         compressed_segment = make_shared_by_data_type<BaseSegment, DictionarySegment>(
           segment_type,
-          base_segment
-        );
-      }
-    ));
+          base_segment);
+      }));
 
     // add segment to chunk
     new_chunk->add_segment(compressed_segment);
   }
 
-  for(auto& thread : threads) {
+  for (auto& thread : threads) {
     thread.join();
   }
 

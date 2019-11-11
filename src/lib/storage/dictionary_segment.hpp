@@ -134,8 +134,7 @@ class DictionarySegment : public BaseSegment {
       lookup_indices.begin(), lookup_indices.end(),
       [&column_values](const uint32_t index_1, const uint32_t index_2) {
         return column_values[index_1] < column_values[index_2];
-      }
-    );
+      });
 
     uint32_t previous_uncompressed_index = lookup_indices[0];
     uint32_t num_unique = 1;

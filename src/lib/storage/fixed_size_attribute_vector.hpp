@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "storage/base_attribute_vector.hpp"
 #include "utils/assert.hpp"
 
@@ -8,7 +9,7 @@ namespace opossum {
 template <typename T>
 class FixedSizeAttributeVector : public BaseAttributeVector {
  public:
-  FixedSizeAttributeVector(std::vector<T> value_ids):
+  explicit FixedSizeAttributeVector(std::vector<T> value_ids):
     _value_ids{value_ids} {}
 
   // returns the value id at a given position
