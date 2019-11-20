@@ -41,6 +41,10 @@ void Table::_append_column_to_chunks(const std::string& type) {
   }
 }
 
+void Table::add_column_definition(const std::string& name, const std::string& type) {
+  // Implementation goes here
+}
+
 void Table::add_column(const std::string& name, const std::string& type) {
   _column_names.push_back(name);
   _column_types.push_back(type);
@@ -53,6 +57,10 @@ void Table::append(std::vector<AllTypeVariant> values) {
     _append_new_chunk();
   }
   _chunks.back()->append(values);
+}
+
+void Table::create_new_chunk() {
+  // Implementation goes here
 }
 
 uint16_t Table::column_count() const { return _column_types.size(); }
@@ -124,6 +132,10 @@ void Table::compress_chunk(ChunkID chunk_id) {
 
   // atomic chunk exchange
   _chunks[chunk_id].reset(new_chunk.get());
+}
+
+void emplace_chunk(Chunk chunk) {
+  // Implementation goes here
 }
 
 }  // namespace opossum
