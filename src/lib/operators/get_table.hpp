@@ -10,6 +10,9 @@ namespace opossum {
 
 // operator to retrieve a table from the StorageManager by specifying its name
 class GetTable : public AbstractOperator {
+ private:
+  const std::string _table_name;
+
  public:
   explicit GetTable(const std::string& name);
 

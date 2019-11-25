@@ -16,11 +16,17 @@ class BaseTableScanImpl;
 class Table;
 
 class TableScan : public AbstractOperator {
+ private:
+  const std::shared_ptr<const AbstractOperator> _in;
+  const ColumnID _column_id;
+  const ScanType _scan_type;
+  const AllTypeVariant _search_value;
+
  public:
-  TableScan(const std::shared_ptr<const AbstractOperator> in, ColumnID column_id, const ScanType scan_type,
+  TableScan(const std::shared_ptr<const AbstractOperator> in, const ColumnID column_id, const ScanType scan_type,
             const AllTypeVariant search_value);
 
-  ~TableScan();
+  ~TableScan() override;
 
   ColumnID column_id() const;
   ScanType scan_type() const;

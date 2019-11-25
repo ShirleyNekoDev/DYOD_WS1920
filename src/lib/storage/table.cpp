@@ -117,18 +117,18 @@ void Table::compress_chunk(ChunkID chunk_id) {
 
     std::shared_ptr<BaseSegment> compressed_segment;
 
-    threads.push_back(std::thread([&compressed_segment, &base_segment, &segment_type]() {
+    //threads.push_back(std::thread([&compressed_segment, &base_segment, &segment_type]() {
       // build dictionary compressed segment
       compressed_segment = make_shared_by_data_type<BaseSegment, DictionarySegment>(segment_type, base_segment);
-    }));
+    //}));
 
     // add segment to chunk
     new_chunk->add_segment(compressed_segment);
   }
 
-  for (auto& thread : threads) {
+  /*for (auto& thread : threads) {
     thread.join();
-  }
+  }*/
 
   // atomic chunk exchange
   _chunks[chunk_id].reset(new_chunk.get());
