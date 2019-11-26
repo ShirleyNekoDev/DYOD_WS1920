@@ -44,9 +44,7 @@ class ReferenceSegment : public BaseSegment {
   // returns the calculated memory usage
   virtual size_t estimate_memory_usage() const override;
 
-  virtual std::shared_ptr<PosList> get_indeces_of_value(const AllTypeVariant &value, PosList &result) const override;
-  virtual std::shared_ptr<PosList> get_indeces_of_value(const AllTypeVariant &value,
-                                                        const std::shared_ptr<PosList> &positions_filter) const override;
+  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const override;
 };
 
 }  // namespace opossum

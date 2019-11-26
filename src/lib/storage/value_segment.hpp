@@ -31,12 +31,12 @@ class ValueSegment : public BaseSegment {
   size_t estimate_memory_usage() const final;
   
   // scans every value in this segment and calls the result_callback if the scan_op comparison with compare_value returns true
-  virtual void segment_scan(const T& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const override;
+  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const override;
 
  protected:
   std::vector<T> _values;
 
-  const std::function<bool(T&)> _scan_predicate(const T& compare_value, const ScanType scan_op) const {
+  const std::function<bool(const T&)> _scan_predicate(const T& compare_value, const ScanType scan_op) const {
     switch (scan_op) {
       case ScanType::OpEquals:
         return [&compare_value](T &row_value) { return row_value == compare_value; };
