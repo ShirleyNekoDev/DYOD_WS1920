@@ -43,12 +43,12 @@ void Table::_append_column_to_chunks(const std::string& type) {
 }
 
 void Table::add_column_definition(const std::string& name, const std::string& type) {
-  // Implementation goes here
+  _column_names.push_back(name);
+  _column_types.push_back(type);
 }
 
 void Table::add_column(const std::string& name, const std::string& type) {
-  _column_names.push_back(name);
-  _column_types.push_back(type);
+  add_column_definition(name, type);
   _append_column_to_chunks(type);
 }
 
@@ -137,7 +137,7 @@ void Table::compress_chunk(ChunkID chunk_id) {
 
 void Table::emplace_chunk(Chunk chunk) {
   if (_chunks.size() == 1 && _chunks[0]->size() == 0) {
-    *_chunks[0] = chunk;
+    *_chunks[0] = std::move(chunk);
   } else {
     _chunks.emplace_back(chunk);
   }
