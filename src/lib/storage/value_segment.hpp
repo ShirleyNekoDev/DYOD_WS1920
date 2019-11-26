@@ -29,9 +29,28 @@ class ValueSegment : public BaseSegment {
 
   // returns the calculated memory usage
   size_t estimate_memory_usage() const final;
+  
+  virtual void segment_scan(const T& value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const override;
 
  protected:
   std::vector<T> _values;
+
+  const std::function<bool(T&)> _scan_predicate(const T& compare_value, const ScanType scan_op) const {
+    switch (scan_op) {
+      case ScanType::OpEquals:
+        return [&compare_value](&row_value) { row_value == compare_value };
+      case ScanType::OpNotEquals:
+        return [&compare_value](&row_value) { row_value != compare_value };
+      case ScanType::OpLessThan:
+        return [&compare_value](&row_value) { row_value < compare_value };
+      case ScanType::OpLessThanEquals:
+        return [&compare_value](&row_value) { row_value <= compare_value };
+      case ScanType::OpGreaterThan:
+        return [&compare_value](&row_value) { row_value > compare_value };
+      case ScanType::OpGreaterThanEquals:
+        return [&compare_value](&row_value) { row_value >= compare_value };
+    }
+  }
 };
 
 }  // namespace opossum

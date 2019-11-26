@@ -40,6 +40,19 @@ size_t ValueSegment<T>::estimate_memory_usage() const {
   return _values.capacity() * sizeof(T);
 }
 
+template <typename T>
+virtual void ValueSegment<T>::segment_scan(const T& value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const {
+  auto size = size();
+  auto scan_predicate = _scan_predicate(value, scan_op);
+  T& current_value;
+  for(ChunkOffset row_index = 0; row_index < size; ++row_index) {
+    current_value = _values[row_index];
+    if(scan_predicate(current_value)) {
+      result_emplacer(current_value);
+    }
+  }
+}
+
 EXPLICITLY_INSTANTIATE_DATA_TYPES(ValueSegment);
 
 }  // namespace opossum
