@@ -41,7 +41,7 @@ size_t ValueSegment<T>::estimate_memory_usage() const {
 }
 
 template <typename T>
-virtual void ValueSegment<T>::segment_scan(const T& value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const {
+virtual void ValueSegment<T>::segment_scan(const T& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const {
   auto size = size();
   auto scan_predicate = _scan_predicate(value, scan_op);
   T& current_value;

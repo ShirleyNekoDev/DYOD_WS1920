@@ -97,6 +97,11 @@ class DictionarySegment : public BaseSegment {
     const size_t dictionary_size = _dictionary->capacity() * sizeof(T);
     return dictionary_size + _attribute_vector->estimate_memory_usage();
   }
+  
+  // scans every value in this segment and calls the result_callback if the scan_op comparison with compare_value returns true
+  virtual void segment_scan(const T& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const override {
+    // TODO
+  }
 
  protected:
   std::shared_ptr<std::vector<T>> _dictionary;

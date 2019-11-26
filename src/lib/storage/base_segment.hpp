@@ -32,6 +32,8 @@ class BaseSegment : private Noncopyable {
   // returns the calculated memory usage
   virtual size_t estimate_memory_usage() const = 0;
 
-  virtual void segment_scan(const AllTypeVariant& value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const = 0;
+  // scans every value in this segment and calls the result_callback if the scan_op comparison with compare_value returns true
+  // may be optimized in overridden implementations 
+  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const = 0;
 };
 }  // namespace opossum
