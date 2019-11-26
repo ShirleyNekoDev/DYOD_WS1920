@@ -136,10 +136,11 @@ void Table::compress_chunk(ChunkID chunk_id) {
 }
 
 void Table::emplace_chunk(Chunk chunk) {
-  if (_chunks.size() == 1 && _chunks[0]->size() == 0) {
-    *_chunks[0] = std::move(chunk);
+  const auto chunk_ptr = std::make_shared<Chunk>(std::move(chunk));
+  if (_chunks.size() == 1 && _chunks.front()->size() == 0) {
+    _chunks.front() = std::move(chunk_ptr);
   } else {
-    _chunks.push_back(std::make_shared<Chunk>(std::move(chunk)));
+    _chunks.push_back(chunk_ptr);
   }
 
 }

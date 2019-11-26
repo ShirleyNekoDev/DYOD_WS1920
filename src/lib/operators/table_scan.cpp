@@ -23,38 +23,57 @@ ScanType TableScan::scan_type() const { return _scan_type; }
 const AllTypeVariant& TableScan::search_value() const { return _search_value; }
 
 std::shared_ptr<const Table> TableScan::_on_execute() {
-  auto input = _in->get_output();
+  const auto input_table = _in->get_output();
+  const auto table_column_count = input_table->column_count();
+  const auto table_chunk_count = input_table->chunk_count();
+  const auto table_max_chunk_size = input_table->max_chunk_size();
+
   auto result = std::make_shared<Table>();
 
-  const uint16_t column_count = input->column_count();
-  const uint32_t chunk_size = input->max_chunk_size();
-
-  for (uint16_t column_id = 0; column_id < column_count; column_id++) {
-    result->add_column_definition(input->column_name(ColumnID(column_id)), input->column_type(ColumnID(column_id)));
+  // copy column definitions
+  for (ColumnID column_id = ColumnID{0}; column_id < table_column_count; column_id++) {
+    result->add_column_definition(
+      input_table->column_name(ColumnID(column_id)),
+      input_table->column_type(ColumnID(column_id))
+    );
   }
 
-  //Assert(input->column_type(_column_id) == detail::type_strings[_search_value.type()]);
+  auto pos_list = std::make_shared<PosList>();
 
-  PosList pos_list;
+  auto output_chunk = [&input_table, &table_column_count, &result](const std::shared_ptr<PosList> pos_list) {
+    // copy pos_list into chunk
+    Chunk new_chunk;
+    for (uint16_t column_id = 0; column_id < table_column_count; column_id++) {
+      // link all found positions for each column
+      new_chunk.add_segment(std::make_shared<ReferenceSegment>(
+        input_table,
+        ColumnID(column_id),
+        pos_list
+      ));
+    }
+    // write chunk in result table
+    result->emplace_chunk(std::move(new_chunk));
+  };
 
-  for (uint32_t input_chunk_index = 0; input_chunk_index < input->chunk_count(); input_chunk_index++) {
-    auto segment = input->get_chunk(ChunkID(input_chunk_index)).get_segment(_column_id);
-    segment->segment_scan(_search_value, _scan_type, [&pos_list, &column_count, &input, &input_chunk_index, &result, &chunk_size](ChunkOffset chunk_offset) {
-      if (pos_list.size() == chunk_size) {
-        Chunk new_chunk;
-        for (uint16_t column_id = 0; column_id < column_count; column_id++) {
-          new_chunk.add_segment(std::make_shared<ReferenceSegment>(input, ColumnID(column_id), std::make_shared<PosList>(pos_list)));
-        }
-        result->emplace_chunk(std::move(new_chunk));
-        pos_list.clear();
+  // scan all chunks from the table
+  for (ChunkID chunk_index = ChunkID{0}; chunk_index < table_chunk_count; ++chunk_index) {
+    // find the relevant column to scan
+    const auto segment = input_table->get_chunk(chunk_index).get_segment(_column_id);
+
+    // scan segment and get matching values' position via lambda
+    segment->segment_scan(_search_value, _scan_type, [&](ChunkOffset chunk_offset) {
+      pos_list->push_back(RowID{chunk_index, chunk_offset});
+
+      if (pos_list->size() == table_max_chunk_size) {
+        output_chunk(pos_list);
+        // create new pos_list
+        pos_list = std::make_shared<PosList>();
       }
-
-      pos_list.push_back(RowID{ChunkID(input_chunk_index), chunk_offset});
     });
+    output_chunk(pos_list);
   }
 
-
-  return _output;
+  return result;
 }
 
 }
