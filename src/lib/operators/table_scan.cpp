@@ -37,8 +37,8 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
     auto pos_list = segment->get_indeces_of_value(_search_value);
     auto result_chunk = std::make_shared<Chunk>();
 
-    for (uint32_t column_id = 0; column_id < input->column_count(); column_id++) {
-      result_chunk->add_segment(std::make_shared<ReferenceSegment>(input, column_id, pos_list));
+    for (uint16_t column_id = 0; column_id < input->column_count(); column_id++) {
+      result_chunk->add_segment(std::make_shared<ReferenceSegment>(input, ColumnID(column_id), pos_list));
     }
 
     //auto dictionary_segment = std::dynamic_pointer_cast<DictionarySegment>(segment);

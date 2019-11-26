@@ -26,7 +26,8 @@ class ReferenceSegment : public BaseSegment {
  public:
   // creates a reference segment
   // the parameters specify the positions and the referenced segment
-  ReferenceSegment(const std::shared_ptr<const Table> referenced_table, const ColumnID referenced_column_id,
+  ReferenceSegment(const std::shared_ptr<const Table> referenced_table,
+                   const ColumnID referenced_column_id,
                    const std::shared_ptr<const PosList> pos);
 
   AllTypeVariant operator[](const ChunkOffset chunk_offset) const override;
@@ -43,7 +44,9 @@ class ReferenceSegment : public BaseSegment {
   // returns the calculated memory usage
   virtual size_t estimate_memory_usage() const override;
 
-  virtual PosList get_indeces_of_value(const AllTypeVariant &value) const override;
+  virtual std::shared_ptr<PosList> get_indeces_of_value(const AllTypeVariant &value, PosList &result) const override;
+  virtual std::shared_ptr<PosList> get_indeces_of_value(const AllTypeVariant &value,
+                                                        const std::shared_ptr<PosList> &positions_filter) const override;
 };
 
 }  // namespace opossum

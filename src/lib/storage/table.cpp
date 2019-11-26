@@ -19,18 +19,19 @@
 
 namespace opossum {
 
-Table::Table(const u_int32_t chunk_size) : _max_chunk_size{chunk_size} {
+Table::Table(const u_int32_t chunk_size) :
+  _max_chunk_size{chunk_size} {
   // create initial chunk to make things easier
   _append_new_chunk();
 }
 
 void Table::_append_new_chunk() {
-  auto new_chunk = std::make_shared<Chunk>();
+  create_new_chunk();
+  auto &new_chunk = _chunks.back();
   for (auto& type : _column_types) {
     // append existing columns (as segments) to new chunk
     new_chunk->add_segment(make_shared_by_data_type<BaseSegment, ValueSegment>(type));
   }
-  _chunks.push_back(new_chunk);
 }
 
 void Table::_append_column_to_chunks(const std::string& type) {
@@ -60,7 +61,7 @@ void Table::append(std::vector<AllTypeVariant> values) {
 }
 
 void Table::create_new_chunk() {
-  // Implementation goes here
+  _chunks.emplace_back();
 }
 
 uint16_t Table::column_count() const { return _column_types.size(); }
@@ -134,8 +135,13 @@ void Table::compress_chunk(ChunkID chunk_id) {
   _chunks[chunk_id].reset(new_chunk.get());
 }
 
-void emplace_chunk(Chunk chunk) {
-  // Implementation goes here
+void Table::emplace_chunk(Chunk chunk) {
+  if (_chunks.size() == 1 && _chunks[0]->size() == 0) {
+    *_chunks[0] = chunk;
+  } else {
+    _chunks.emplace_back(chunk);
+  }
+
 }
 
 }  // namespace opossum

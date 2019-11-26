@@ -25,9 +25,26 @@ size_t ReferenceSegment::estimate_memory_usage() const {
   return sizeof(RowID) * _pos->capacity();
 }
 
-virtual PosList get_indeces_of_value(const AllTypeVariant &value) const {
+void ReferenceSegment::segment_scan(const AllTypeVariant &value,  &result) const {
+  uint32_t chunk_count = _referenced_table->chunk_count();
+  std::vector<std::vector<uint32_t>> indices_filter_for_chunk(chunk_count);
 
+  for (const auto &item: *_pos) {
+    indices_filter_for_chunk[item.chunk_id].push_back(item.chunk_offset);
+  }
+
+  for (uint32_t chunk_index = 0; chunk_index < chunk_count; chunk_index++) {
+    const auto &segment = referenced_table()->get_chunk(ChunkID(chunk_index)).get_segment(_referenced_column_id);
+    segment->segment_scan()
+  }
 }
 
+
+std::shared_ptr<PosList> ReferenceSegment::get_indexes_of_value(const AllTypeVariant &value,
+                                                                const std::shared_ptr<uint32_t> &indices_filter,
+                                                                const uint32_t chunk_id,
+                                                                PosList &result) const {
+
+}
 
 }

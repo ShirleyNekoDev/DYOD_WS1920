@@ -42,6 +42,8 @@ class Chunk : private Noncopyable {
   // note this is slow and not thread-safe and should be used for testing purposes only
   void append(const std::vector<AllTypeVariant>& values);
 
+  void append
+
   // Returns the segment at a given position
   std::shared_ptr<BaseSegment> get_segment(ColumnID column_id) const;
 
