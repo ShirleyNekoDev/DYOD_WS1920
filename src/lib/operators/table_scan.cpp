@@ -35,21 +35,21 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
 
   //Assert(input->column_type(_column_id) == detail::type_strings[_search_value.type()]);
 
-  std::vector<RowID> row_ids;
+  PosList pos_list;
 
   for (uint32_t input_chunk_index = 0; input_chunk_index < input->chunk_count(); input_chunk_index++) {
     auto segment = input->get_chunk(ChunkID(input_chunk_index)).get_segment(_column_id);
-    segment->segment_scan(_search_value, _scan_type, [&column_count, &input, &input_chunk_index, &result, &row_ids, &chunk_size](ChunkOffset chunk_offset) {
-      if (row_ids.size() == chunk_size) {
+    segment->segment_scan(_search_value, _scan_type, [&pos_list, &column_count, &input, &input_chunk_index, &result, &chunk_size](ChunkOffset chunk_offset) {
+      if (pos_list.size() == chunk_size) {
         Chunk new_chunk;
         for (uint16_t column_id = 0; column_id < column_count; column_id++) {
-          new_chunk.add_segment(std::make_shared<ReferenceSegment>(input, ColumnID(column_id), row_ids));
+          new_chunk.add_segment(std::make_shared<ReferenceSegment>(input, ColumnID(column_id), std::make_shared<PosList>(pos_list)));
         }
         result->emplace_chunk(std::move(new_chunk));
+        pos_list.clear();
       }
 
-      RowID new_row_id;
-      row_ids.push_back(RowID{ChunkID(input_chunk_index), chunk_offset});
+      pos_list.push_back(RowID{ChunkID(input_chunk_index), chunk_offset});
     });
   }
 
