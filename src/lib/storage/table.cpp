@@ -139,7 +139,7 @@ void Table::emplace_chunk(Chunk chunk) {
   if (_chunks.size() == 1 && _chunks[0]->size() == 0) {
     *_chunks[0] = std::move(chunk);
   } else {
-    _chunks.emplace_back(chunk);
+    _chunks.push_back(std::make_shared<Chunk>(std::move(chunk)));
   }
 
 }
