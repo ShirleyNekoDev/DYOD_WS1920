@@ -61,7 +61,7 @@ void Table::append(std::vector<AllTypeVariant> values) {
 }
 
 void Table::create_new_chunk() {
-  _chunks.emplace_back();
+  _chunks.push_back(std::make_shared<Chunk>());
 }
 
 uint16_t Table::column_count() const { return _column_types.size(); }

@@ -120,7 +120,7 @@ class DictionarySegment : public BaseSegment {
     const auto scan_predicate = _scan_predicate(type_cast<T>(compare_value), scan_op);
     for(ChunkOffset row_index = 0; row_index < row_count; ++row_index) {
       if(scan_predicate(_attribute_vector->get(row_index))) {
-        result_callback(owID{chunk_id, row_index});
+        result_callback(RowID{chunk_id, row_index});
       }
     }
   }
@@ -130,7 +130,7 @@ class DictionarySegment : public BaseSegment {
     const auto scan_predicate = _scan_predicate(type_cast<T>(compare_value), scan_op);
     for(const ChunkOffset row_index: row_filter) {
       if(scan_predicate(_attribute_vector->get(row_index))) {
-        result_callback(owID{chunk_id, row_index});
+        result_callback(RowID{chunk_id, row_index});
       }
     }
   }
