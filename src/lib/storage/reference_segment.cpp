@@ -25,26 +25,34 @@ size_t ReferenceSegment::estimate_memory_usage() const {
   return sizeof(RowID) * _pos->capacity();
 }
 
-void ReferenceSegment::segment_scan(const AllTypeVariant &value,  &result) const {
+void ReferenceSegment::segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID) const {
   uint32_t chunk_count = _referenced_table->chunk_count();
-  std::vector<std::vector<uint32_t>> indices_filter_for_chunk(chunk_count);
+  std::vector<std::vector<ChunkOffset>> offset_filter_for_chunk(chunk_count);
 
   for (const auto &item: *_pos) {
-    indices_filter_for_chunk[item.chunk_id].push_back(item.chunk_offset);
+    offset_filter_for_chunk[item.chunk_id].push_back(item.chunk_offset);
   }
 
   for (uint32_t chunk_index = 0; chunk_index < chunk_count; chunk_index++) {
     const auto &segment = referenced_table()->get_chunk(ChunkID(chunk_index)).get_segment(_referenced_column_id);
-    segment->segment_scan()
+    segment->segment_scan(compare_value, scan_op, result_callback, ChunkID(chunk_index), offset_filter_for_chunk[chunk_index]);
   }
 }
 
 
-std::shared_ptr<PosList> ReferenceSegment::get_indexes_of_value(const AllTypeVariant &value,
-                                                                const std::shared_ptr<uint32_t> &indices_filter,
-                                                                const uint32_t chunk_id,
-                                                                PosList &result) const {
+void ReferenceSegment::segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID, std::vector<ChunkOffset> offset_filter) const {
+  uint32_t chunk_count = _referenced_table->chunk_count();
+  std::vector<std::vector<ChunkOffset>> offset_filter_for_chunk(chunk_count);
 
+  for (const auto offset: offset_filter) {
+    const auto &item = (*_pos)[offset];
+    offset_filter_for_chunk[item.chunk_id].push_back(item.chunk_offset);
+  }
+
+  for (uint32_t chunk_index = 0; chunk_index < chunk_count; chunk_index++) {
+    const auto &segment = referenced_table()->get_chunk(ChunkID(chunk_index)).get_segment(_referenced_column_id);
+    segment->segment_scan(compare_value, scan_op, result_callback, ChunkID(chunk_index), offset_filter_for_chunk[chunk_index]);
+  }
 }
 
 }

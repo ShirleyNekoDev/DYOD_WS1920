@@ -34,6 +34,8 @@ class BaseSegment : private Noncopyable {
 
   // scans every value in this segment and calls the result_callback if the scan_op comparison with compare_value returns true
   // may be optimized in overridden implementations 
-  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const = 0;
+  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID chunk_id) const = 0;
+  // scans only the values at offsets in offset_filter
+  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID chunk_id, std::vector<ChunkOffset> offset_filter) const = 0;
 };
 }  // namespace opossum

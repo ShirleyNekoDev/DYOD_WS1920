@@ -31,7 +31,10 @@ class ValueSegment : public BaseSegment {
   size_t estimate_memory_usage() const final;
   
   // scans every value in this segment and calls the result_callback if the scan_op comparison with compare_value returns true
-  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const override;
+  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID chunk_id) const override;
+
+  // same as above, but only using the values at offsets from offset_filter
+  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID chunk_id, std::vector<ChunkOffset> offset_filter) const override;
 
  protected:
   std::vector<T> _values;
