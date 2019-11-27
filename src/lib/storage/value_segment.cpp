@@ -40,6 +40,27 @@ size_t ValueSegment<T>::estimate_memory_usage() const {
   return _values.capacity() * sizeof(T);
 }
 
+template <typename T>
+void ValueSegment<T>::segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID chunk_id) const {
+  const auto row_count = size();
+  const auto scan_predicate = _scan_predicate(type_cast<T>(compare_value), scan_op);
+  for(ChunkOffset row_index = 0; row_index < row_count; ++row_index) {
+    if(scan_predicate(_values[row_index])) {
+      result_callback(RowID{chunk_id, row_index});
+    }
+  }
+}
+
+template <typename T>
+void ValueSegment<T>::segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID chunk_id, std::vector<ChunkOffset> offset_filter) const {
+  const auto scan_predicate = _scan_predicate(type_cast<T>(compare_value), scan_op);
+  for(const ChunkOffset row_index: offset_filter) {
+    if(scan_predicate(_values[row_index])) {
+      result_callback(RowID{chunk_id, row_index});
+    }
+  }
+}
+
 EXPLICITLY_INSTANTIATE_DATA_TYPES(ValueSegment);
 
 }  // namespace opossum

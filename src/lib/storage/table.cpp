@@ -19,18 +19,19 @@
 
 namespace opossum {
 
-Table::Table(const u_int32_t chunk_size) : _max_chunk_size{chunk_size} {
+Table::Table(const u_int32_t chunk_size) :
+  _max_chunk_size{chunk_size} {
   // create initial chunk to make things easier
   _append_new_chunk();
 }
 
 void Table::_append_new_chunk() {
-  auto new_chunk = std::make_shared<Chunk>();
+  create_new_chunk();
+  auto &new_chunk = _chunks.back();
   for (auto& type : _column_types) {
     // append existing columns (as segments) to new chunk
     new_chunk->add_segment(make_shared_by_data_type<BaseSegment, ValueSegment>(type));
   }
-  _chunks.push_back(new_chunk);
 }
 
 void Table::_append_column_to_chunks(const std::string& type) {
@@ -41,9 +42,13 @@ void Table::_append_column_to_chunks(const std::string& type) {
   }
 }
 
-void Table::add_column(const std::string& name, const std::string& type) {
+void Table::add_column_definition(const std::string& name, const std::string& type) {
   _column_names.push_back(name);
   _column_types.push_back(type);
+}
+
+void Table::add_column(const std::string& name, const std::string& type) {
+  add_column_definition(name, type);
   _append_column_to_chunks(type);
 }
 
@@ -53,6 +58,10 @@ void Table::append(std::vector<AllTypeVariant> values) {
     _append_new_chunk();
   }
   _chunks.back()->append(values);
+}
+
+void Table::create_new_chunk() {
+  _chunks.push_back(std::make_shared<Chunk>());
 }
 
 uint16_t Table::column_count() const { return _column_types.size(); }
@@ -92,7 +101,10 @@ Chunk& Table::get_chunk(ChunkID chunk_id) {
   return *_chunks[chunk_id];
 }
 
-const Chunk& Table::get_chunk(ChunkID chunk_id) const { return get_chunk(chunk_id); }
+const Chunk& Table::get_chunk(ChunkID chunk_id) const {
+  DebugAssert(chunk_id < column_count(), "Chunk id out of bounds");
+  return *_chunks[chunk_id];
+}
 
 void Table::compress_chunk(ChunkID chunk_id) {
   const auto& old_chunk = get_chunk(chunk_id);
@@ -109,21 +121,31 @@ void Table::compress_chunk(ChunkID chunk_id) {
 
     std::shared_ptr<BaseSegment> compressed_segment;
 
-    threads.push_back(std::thread([&compressed_segment, &base_segment, &segment_type]() {
+    //threads.push_back(std::thread([&compressed_segment, &base_segment, &segment_type]() {
       // build dictionary compressed segment
       compressed_segment = make_shared_by_data_type<BaseSegment, DictionarySegment>(segment_type, base_segment);
-    }));
+    //}));
 
     // add segment to chunk
     new_chunk->add_segment(compressed_segment);
   }
 
-  for (auto& thread : threads) {
+  /*for (auto& thread : threads) {
     thread.join();
-  }
+  }*/
 
   // atomic chunk exchange
   _chunks[chunk_id].reset(new_chunk.get());
+}
+
+void Table::emplace_chunk(Chunk chunk) {
+  const auto chunk_ptr = std::make_shared<Chunk>(std::move(chunk));
+  if (_chunks.size() == 1 && _chunks.front()->size() == 0) {
+    _chunks.front() = std::move(chunk_ptr);
+  } else {
+    _chunks.push_back(chunk_ptr);
+  }
+
 }
 
 }  // namespace opossum
