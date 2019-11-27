@@ -101,7 +101,10 @@ Chunk& Table::get_chunk(ChunkID chunk_id) {
   return *_chunks[chunk_id];
 }
 
-const Chunk& Table::get_chunk(ChunkID chunk_id) const { return get_chunk(chunk_id); }
+const Chunk& Table::get_chunk(ChunkID chunk_id) const {
+  DebugAssert(chunk_id < column_count(), "Chunk id out of bounds");
+  return *_chunks[chunk_id];
+}
 
 void Table::compress_chunk(ChunkID chunk_id) {
   const auto& old_chunk = get_chunk(chunk_id);
