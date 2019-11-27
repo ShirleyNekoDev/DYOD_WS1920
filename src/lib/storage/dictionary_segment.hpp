@@ -115,12 +115,22 @@ class DictionarySegment : public BaseSegment {
   }
   
   // scans every value in this segment and calls the result_callback if the scan_op comparison with compare_value returns true
-  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const override {
+  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID chunk_id) const override {
     const auto row_count = _attribute_vector->size();
     const auto scan_predicate = _scan_predicate(type_cast<T>(compare_value), scan_op);
     for(ChunkOffset row_index = 0; row_index < row_count; ++row_index) {
       if(scan_predicate(_attribute_vector->get(row_index))) {
-        result_callback(row_index);
+        result_callback(RowID{chunk_id, row_index});
+      }
+    }
+  }
+
+  // same as above, but only using the values at offsets from offset_filter
+  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID chunk_id, std::vector<ChunkOffset> row_filter) const override {
+    const auto scan_predicate = _scan_predicate(type_cast<T>(compare_value), scan_op);
+    for(const ChunkOffset row_index: row_filter) {
+      if(scan_predicate(_attribute_vector->get(row_index))) {
+        result_callback(RowID{chunk_id, row_index});
       }
     }
   }
