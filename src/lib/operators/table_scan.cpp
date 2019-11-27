@@ -61,15 +61,15 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
     const auto segment = input_table->get_chunk(chunk_index).get_segment(_column_id);
 
     // scan segment and get matching values' position via lambda
-    segment->segment_scan(_search_value, _scan_type, [&](ChunkOffset chunk_offset) {
-      pos_list->push_back(RowID{chunk_index, chunk_offset});
+    segment->segment_scan(_search_value, _scan_type, [&](RowID row_id) {
+      pos_list->push_back(row_id);
 
       if (pos_list->size() == table_max_chunk_size) {
         output_chunk(pos_list);
         // create new pos_list
         pos_list = std::make_shared<PosList>();
       }
-    });
+    }, chunk_index);
     output_chunk(pos_list);
   }
 

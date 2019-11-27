@@ -99,7 +99,11 @@ class DictionarySegment : public BaseSegment {
   }
   
   // scans every value in this segment and calls the result_callback if the scan_op comparison with compare_value returns true
-  virtual void segment_scan(const T& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const override {
+  virtual void segment_scan(const AllTypeVariant compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID chunk_id) const override {
+    // TODO
+  }
+
+  virtual void segment_scan(const AllTypeVariant compare_value, const ScanType scan_op, const std::function<void(RowID)> result_callback, ChunkID chunk_id, std::vector<ChunkOffset> offset_filter) const override {
     // TODO
   }
 

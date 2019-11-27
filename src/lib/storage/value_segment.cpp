@@ -51,6 +51,16 @@ void ValueSegment<T>::segment_scan(const AllTypeVariant& compare_value, const Sc
   }
 }
 
+template <typename T>
+void ValueSegment<T>::segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback, std::vector<ChunkOffset> offset_filter) const {
+  const auto scan_predicate = _scan_predicate(type_cast<T>(compare_value), scan_op);
+  for(const ChunkOffset row_index: offset_filter) {
+    if(scan_predicate(_values[row_index])) {
+      result_callback(row_index);
+    }
+  }
+}
+
 EXPLICITLY_INSTANTIATE_DATA_TYPES(ValueSegment);
 
 }  // namespace opossum
