@@ -23,6 +23,9 @@ class BaseAttributeVector;
 // types (uint8_t, uint16_t) since after a down-cast INVALID_VALUE_ID will look like their numeric_limit::max()
 constexpr ValueID INVALID_VALUE_ID{std::numeric_limits<ValueID::base_type>::max()};
 
+const auto ALWAYS_TRUE_SCAN_PREDICATE = [](const ValueID& value_id) { return true; };
+const auto ALWAYS_FALSE_SCAN_PREDICATE = [](const ValueID& value_id) { return false; };
+
 // Dictionary is a specific segment type that stores all its values in a vector
 template <typename T>
 class DictionarySegment : public BaseSegment {
@@ -56,7 +59,7 @@ class DictionarySegment : public BaseSegment {
   std::shared_ptr<const BaseAttributeVector> attribute_vector() const { return _attribute_vector; }
 
   // return the value represented by a given ValueID
-  const T& value_by_value_id(ValueID value_id) const { return _dictionary.at(value_id); }
+  const T& value_by_value_id(ValueID value_id) const { return _dictionary->at(value_id); }
 
   // returns the first value ID that refers to a value >= the search value
   // returns INVALID_VALUE_ID if all values are smaller than the search value
@@ -86,6 +89,19 @@ class DictionarySegment : public BaseSegment {
   // same as upper_bound(T), but accepts an AllTypeVariant
   ValueID upper_bound(const AllTypeVariant& value) const { return upper_bound(type_cast<T>(value)); }
 
+  // returns the position of the search value in the segment if it is found
+  // returns INVALID_VALUE_ID otherwise
+  ValueID find_value(T value) const {
+    const ValueID probable_value_id = lower_bound(value);
+    if(probable_value_id != INVALID_VALUE_ID) {
+      const T& found_value = this->value_by_value_id(probable_value_id);
+      if(found_value == value) {
+       return probable_value_id;
+      }
+    }
+    return INVALID_VALUE_ID;
+  }
+
   // return the number of unique_values (dictionary entries)
   size_t unique_values_count() const { return _dictionary->size(); }
 
@@ -99,13 +115,82 @@ class DictionarySegment : public BaseSegment {
   }
   
   // scans every value in this segment and calls the result_callback if the scan_op comparison with compare_value returns true
-  virtual void segment_scan(const T& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const override {
-    // TODO
+  virtual void segment_scan(const AllTypeVariant& compare_value, const ScanType scan_op, const std::function<void(ChunkOffset)> result_callback) const override {
+    const auto row_count = _attribute_vector->size();
+    const auto scan_predicate = _scan_predicate(type_cast<T>(compare_value), scan_op);
+    for(ChunkOffset row_index = 0; row_index < row_count; ++row_index) {
+      if(scan_predicate(_attribute_vector->get(row_index))) {
+        result_callback(row_index);
+      }
+    }
   }
 
  protected:
   std::shared_ptr<std::vector<T>> _dictionary;
   std::shared_ptr<BaseAttributeVector> _attribute_vector;
+
+  const std::function<bool(const ValueID&)> _scan_predicate(const T& compare_value, const ScanType scan_op) const {
+    // optimized scan - we can use the order of _dictionary and it's indices to filter the elements via binary search
+    ValueID found_value_id, lower_bounds_id, upper_bounds_id;
+    switch(scan_op) {
+      case ScanType::OpEquals:
+        found_value_id = find_value(compare_value);
+        if(found_value_id != INVALID_VALUE_ID) {
+          // value found, filter rows by matching id
+          return [&found_value_id](const ValueID& value_id) { return value_id == found_value_id; };
+        } else {
+          // value not found, no row will match
+          return ALWAYS_FALSE_SCAN_PREDICATE;
+        }
+      case ScanType::OpNotEquals:
+        found_value_id = find_value(compare_value);
+        if(found_value_id != INVALID_VALUE_ID) {
+          // value found, filter rows by non-matching id
+          return [&found_value_id](const ValueID& value_id) { return value_id != found_value_id; };
+        } else {
+          // value not found, all rows will match
+          return ALWAYS_TRUE_SCAN_PREDICATE;
+        }
+      case ScanType::OpLessThan:
+        lower_bounds_id = lower_bound(compare_value);
+        if (lower_bounds_id != INVALID_VALUE_ID) {
+          // some values are smaller, filter rows with smaller id
+          return [&lower_bounds_id](const ValueID& value_id) { return value_id < lower_bounds_id; };
+        } else {
+          // all values are smaller
+          return ALWAYS_TRUE_SCAN_PREDICATE;
+        }
+      case ScanType::OpLessThanEquals:
+        upper_bounds_id = upper_bound(compare_value);
+        if (upper_bounds_id != INVALID_VALUE_ID) {
+          // some values are smaller or equal, filter rows with smaller id
+          return [&upper_bounds_id](const ValueID& value_id) { return value_id < upper_bounds_id; };
+        } else {
+          // all values are smaller
+          return ALWAYS_TRUE_SCAN_PREDICATE;
+        }
+      case ScanType::OpGreaterThan:
+        upper_bounds_id = upper_bound(compare_value);
+        if (upper_bounds_id != INVALID_VALUE_ID) {
+          // some values are bigger, filter rows with bigger or equal id
+          return [&upper_bounds_id](const ValueID& value_id) { return value_id >= upper_bounds_id; };
+        } else {
+          // all values are bigger
+          return ALWAYS_FALSE_SCAN_PREDICATE;
+        }
+      case ScanType::OpGreaterThanEquals:
+        lower_bounds_id = lower_bound(compare_value);
+        if (lower_bounds_id != INVALID_VALUE_ID) {
+          // some values are bigger or equal, filter rows with bigger or equal id
+          return [&lower_bounds_id](const ValueID& value_id) { return value_id >= lower_bounds_id; };
+        } else {
+          // all values are bigger
+          return ALWAYS_FALSE_SCAN_PREDICATE;
+        }
+      default:
+        throw std::domain_error("Unknown scan operation");
+    }
+  }
 
   void _compress_values(const std::vector<T>& column_values) {
     std::vector<uint32_t> lookup_indices(column_values.size());
